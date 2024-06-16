@@ -343,6 +343,82 @@ def readMultiScaleNerfSyntheticInfo(path, white_background, eval, load_allres=Fa
                            ply_path=ply_path)
     return scene_info
 
+
+def loadCamerasFromData(traindata, white_background):
+    cameras = []
+    cam_infos = []
+
+    fovx = traindata["camera_angle_x"]
+    frames = traindata["frames"]
+    width = traindata["W"]
+    height = traindata["H"]
+    for idx, frame in enumerate(frames):
+        # NeRF 'transform_matrix' is a camera-to-world transform
+        c2w = np.array(frame["transform_matrix"])
+        # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)
+        c2w[:3, 1:3] *= -1
+
+        # get the world-to-camera transform and set R, T
+        w2c = np.linalg.inv(c2w)
+        R = np.transpose(w2c[:3,:3])  # R is stored transposed due to 'glm' in CUDA code
+        T = w2c[:3, 3]
+
+        image = Image.open(frame['image']) if "image" in frame else None
+
+        image_path = frame['image']
+        image_name = os.path.basename(image_path).split(".")[0]
+        
+        im_data = np.array(image.convert("RGBA"))
+
+        bg = np.array([1,1,1]) if white_background else np.array([0, 0, 0])
+
+        norm_data = im_data / 255.0
+        arr = norm_data[:,:,:3] * norm_data[:, :, 3:4] + bg * (1 - norm_data[:, :, 3:4])
+        image = Image.fromarray(np.array(arr*255.0, dtype=np.byte), "RGB")
+        loaded_mask = np.ones_like(norm_data[:, :, 3:4])
+
+        fovy = focal2fov(fov2focal(fovx, image.size[1]), image.size[0])
+        FovY = fovy 
+        FovX = fovx
+
+        #image = torch.Tensor(arr).permute(2,0,1)
+        loaded_mask = None #torch.Tensor(loaded_mask).permute(2,0,1)
+        
+
+        image = Image.open(frame['image']) if "image" in frame else None
+
+        cam_info = CameraInfo(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
+                              image_path=image_path, image_name=image_name, width=width, height=height)
+
+        cam_infos.append(cam_info)
+            
+    return cam_infos
+
+
+def readDataInfo(traindata, white_background):
+    print("Reading Training Transforms")
+    
+    train_cameras = loadCamerasFromData(traindata, white_background)
+    #preset_minicams = loadCameraPreset(traindata, presetdata=get_camerapaths())
+    
+    # if not eval:
+    #     train_cam_infos.extend(test_cam_infos)
+    #     test_cam_infos = []
+
+    nerf_normalization = getNerfppNorm(train_cameras)
+
+    pcd = BasicPointCloud(points=traindata['pcd_points'].T, colors=traindata['pcd_colors'], normals=None)
+
+    
+    scene_info = SceneInfo(point_cloud=pcd,
+                           train_cameras=train_cameras,
+                           test_cameras=[],
+                           #preset_cameras=preset_minicams,
+                           nerf_normalization=nerf_normalization,
+                           ply_path='traindata/output.ply')
+    return scene_info
+
+
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
     "Blender" : readNerfSyntheticInfo,

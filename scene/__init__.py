@@ -13,10 +13,25 @@ import os
 import random
 import json
 from utils.system_utils import searchForMaxIteration
-from scene.dataset_readers import sceneLoadTypeCallbacks
+from scene.dataset_readers import sceneLoadTypeCallbacks, readDataInfo
 from scene.gaussian_model import GaussianModel
 from arguments import ModelParams
 from utils.camera_utils import cameraList_from_camInfos, camera_to_JSON
+import numpy as np
+from PIL import Image
+
+
+def load_data(base_path):
+    with open(f'{base_path}/data.json', 'r') as fp:
+        data = json.load(fp)
+
+    if 'pcd_points' in data:
+        data['pcd_points'] = np.load(data['pcd_points'])
+    
+    if 'pcd_colors' in data:
+        data['pcd_colors'] = np.load(data['pcd_colors'])
+
+    return data
 
 class Scene:
 
@@ -30,27 +45,11 @@ class Scene:
         self.loaded_iter = None
         self.gaussians = gaussians
 
-        if load_iteration:
-            if load_iteration == -1:
-                self.loaded_iter = searchForMaxIteration(os.path.join(self.model_path, "point_cloud"))
-            else:
-                self.loaded_iter = load_iteration
-            print("Loading trained model at iteration {}".format(self.loaded_iter))
-
         self.train_cameras = {}
         self.test_cameras = {}
-
-        if os.path.exists(os.path.join(args.source_path, "sparse")):
-            scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval)
-        elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
-            print("Found transforms_train.json file, assuming Blender data set!")
-            scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval)
-        elif os.path.exists(os.path.join(args.source_path, "metadata.json")):
-            print("Found metadata.json file, assuming multi scale Blender data set!")
-            scene_info = sceneLoadTypeCallbacks["Multi-scale"](args.source_path, args.white_background, args.eval, args.load_allres)
-        else:
-            assert False, "Could not recognize scene type!"
-
+        restored_data = load_data('traindata/')
+        scene_info = readDataInfo(restored_data, args.white_background)
+        
         if not self.loaded_iter:
             with open(scene_info.ply_path, 'rb') as src_file, open(os.path.join(self.model_path, "input.ply") , 'wb') as dest_file:
                 dest_file.write(src_file.read())

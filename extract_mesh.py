@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Testing script parameters")
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
-    parser.add_argument("--iteration", default=30000, type=int)
+    parser.add_argument("--iteration", default=2900, type=int)
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--filter_mesh", action="store_true")
     parser.add_argument("--texture_mesh", action="store_true")

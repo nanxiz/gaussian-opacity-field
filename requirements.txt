@@ -5,3 +5,9 @@ GPUtil
 opencv-python
 lpips
 trimesh
+timm==0.6.7
+boto3
+scipy
+json
+pyvista
+fast-simplification
