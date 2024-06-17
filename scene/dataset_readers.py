@@ -406,8 +406,24 @@ def readDataInfo(traindata, white_background):
     #     test_cam_infos = []
 
     nerf_normalization = getNerfppNorm(train_cameras)
+    points = traindata['pcd_points']  
+    points = points.T
 
-    pcd = BasicPointCloud(points=traindata['pcd_points'].T, colors=traindata['pcd_colors'], normals=None)
+    colors = traindata['pcd_colors'] 
+
+
+    pcd = BasicPointCloud(points=points, colors=colors, normals=None)
+    
+    
+    vertex = np.array([(points[i][0], points[i][1], points[i][2], colors[i][0], colors[i][1], colors[i][2]) 
+                       for i in range(points.shape[0])], 
+                      dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4'), ('red', 'f4'), ('green', 'f4'), ('blue', 'f4')])
+    
+    el = PlyElement.describe(vertex, 'vertex')
+    
+
+    PlyData([el], text=True).write('./traindata/output.ply')
+
 
     
     scene_info = SceneInfo(point_cloud=pcd,
