@@ -25,11 +25,21 @@ import logging
 import trimesh
 import pyvista
 import fast_simplification
-import runpod
+import shutil
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def remove_directory(dir_path):
+    if os.path.exists(dir_path):
+        try:
+            shutil.rmtree(dir_path)
+            print(f"Directory '{dir_path}' has been removed successfully.")
+        except Exception as e:
+            print(f'Failed to remove {dir_path}. Reason: {e}')
+    else:
+        print(f"Directory {dir_path} does not exist.")
 
 def generate_seed_hemisphere(center_depth, degree=5):
     # change later to test
@@ -389,6 +399,12 @@ def inference(event) -> Union[str, dict]:
             return {"error": "Not a panorama image"}
     else:
         return {"error": f"Failed to retrieve image. Status code: {response.status_code}"}
+
+
+    directory = "train_res"
+    # Remove the directory
+    remove_directory(directory)
+    
     
     image_curr = panorama_to_plane(image_360, FOV, (H, W), yaws[0], pitches[0])
     #image_curr.show()
