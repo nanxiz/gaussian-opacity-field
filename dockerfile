@@ -6,55 +6,82 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV MINICONDA_INSTALLER_SCRIPT Miniconda3-py38_23.1.0-1-Linux-x86_64.sh
 ENV MINICONDA_PREFIX /usr/local
 
-# Install necessary packages
-RUN apt-get update && apt-get install -y wget g++-9 gcc-9 git cmake make
+WORKDIR /workspace
 
-# Set alternatives for gcc and g++
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 20 && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    g++-9 \
+    gcc-9 \
+    make \
+    cmake \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/SpectacularAI/point-cloud-tools.git
+
+# Update alternatives for GCC and G++
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 20 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
 
 # Download and install Miniconda
-RUN wget https://repo.continuum.io/miniconda/$MINICONDA_INSTALLER_SCRIPT && \
-    chmod +x $MINICONDA_INSTALLER_SCRIPT && \
-    ./$MINICONDA_INSTALLER_SCRIPT -b -f -p $MINICONDA_PREFIX && \
-    rm $MINICONDA_INSTALLER_SCRIPT
+RUN wget https://repo.anaconda.com/miniconda/$MINICONDA_INSTALLER_SCRIPT \
+    && chmod +x $MINICONDA_INSTALLER_SCRIPT \
+    && ./$MINICONDA_INSTALLER_SCRIPT -b -f -p $MINICONDA_PREFIX \
+    && rm $MINICONDA_INSTALLER_SCRIPT
 
-# Initialize Conda
-RUN ln -s $MINICONDA_PREFIX/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-    echo ". $MINICONDA_PREFIX/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate base" >> ~/.bashrc
 
-# Clone the repository
-RUN git clone https://github.com/autonomousvision/gaussian-opacity-fields.git
-WORKDIR /gaussian-opacity-fields
+COPY . /workspace/gaussian-opacity-field
 
-# Create a new Conda environment
-RUN conda create -y -n gof python=3.8 && \
-    echo "conda activate gof" >> ~/.bashrc
+WORKDIR /workspace/gaussian-opacity-field
 
-# Install PyTorch
-RUN . $MINICONDA_PREFIX/etc/profile.d/conda.sh && \
-    conda activate gof && \
-    pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+RUN conda create -y -n gof python=3.9 \
+    && echo "source activate gof" > ~/.bashrc
+
+RUN conda init bash
+
+
+# Initialize Conda for bash shell
+SHELL ["conda", "run", "-n", "gof", "/bin/bash", "-c"]
+
+RUN pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+
+
+# Install CUDA toolkit
+RUN conda install cudatoolkit-dev=11.3 -c conda-forge -y
+
+# Install other Python requirements
+COPY requirements.txt /workspace/gaussian-opacity-field/
+RUN pip install -r requirements.txt
+
+
+# Install submodules
+RUN pip install submodules/diff-gaussian-rasterization \
+    && pip install submodules/simple-knn/
 
 # Install additional Conda packages
-RUN conda install cudatoolkit-dev=11.3 -c conda-forge -y && \
-    conda install cmake -y && \
+RUN conda install cmake -y && \
     conda install conda-forge::gmp -y && \
     conda install conda-forge::cgal -y
 
-# Install Python requirements
-COPY requirements.txt /gaussian-opacity-fields/
-RUN pip install -r requirements.txt
-
-# Install custom submodules
-RUN pip install submodules/diff-gaussian-rasterization && \
-    pip install submodules/simple-knn/
 
 # Build and install Tetra-nerf for triangulation
-WORKDIR /gaussian-opacity-fields/submodules/tetra-triangulation
+WORKDIR /workspace/gaussian-opacity-fields/submodules/tetra-triangulation
 RUN cmake . && make && pip install -e .
 
-# Return to the main directory
-WORKDIR /gaussian-opacity-fields
 
+
+#RUN pip install pyvista
+
+#RUN pip install fast-simplification
+
+#RUN pip install pandas pandas pyarrow
+
+RUN pip install runpod 
+
+# Return to the main directory
+WORKDIR /workspace/gaussian-opacity-field
+
+
+CMD ["python", "handler.py"]
