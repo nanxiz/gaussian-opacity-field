@@ -27,7 +27,6 @@ DTU_mask
 *.pth
 *.npy
 TNT/
-*.json
 reports/
 dtu_exp/
 TNT_GOF
