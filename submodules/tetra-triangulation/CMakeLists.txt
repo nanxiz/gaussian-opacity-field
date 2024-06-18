@@ -48,6 +48,10 @@ set(CUDA_GENERATED_OUTPUT_DIR "${BUILD_DIRECTORY}")
 
 # configure_file("${CMAKE_SOURCE_DIR}/path_util.py.in" "${CMAKE_SOURCE_DIR}/../examples/path_util.py")
 
+set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-11.8")  # 根据需要调整此路径
+include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64) 
+
 
 #------------------------------------------------------------------------------
 # main build
