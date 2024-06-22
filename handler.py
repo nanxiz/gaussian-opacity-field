@@ -26,6 +26,7 @@ import trimesh
 import pyvista
 import fast_simplification
 import shutil
+import runpod
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -222,20 +223,23 @@ def save_data(data, base_path):
 
 def run_command(command):
         try:
+            print(f"Executing command: {' '.join(command)}")
             result = subprocess.run(command, capture_output=True, text=True, check=True,encoding='utf-8')
             logger.info(f"Command succeeded: {' '.join(command)}")
             logger.info(f"Standard Output: {result.stdout}")
             logger.info(f"Standard Error: {result.stderr}")
             if result.returncode == 0:
-                print("Script executed successfully.")
+                print("GS Script executed successfully.")
             else:
                 print("Script execution failed.")
                 print(f"Error message: {result.stderr}")
+                return {"error": result.stderr}
         except subprocess.CalledProcessError as e:
             logger.error(f"Command failed: {' '.join(command)}")
             logger.error(f"Return Code: {e.returncode}")
             logger.error(f"Standard Output: {e.stdout}")
             logger.error(f"Standard Error: {e.stderr}")
+            return {"error": e.stderr}
 
 
 def generate_and_extract_full_sphere_poses(n_horizontal, n_vertical):
