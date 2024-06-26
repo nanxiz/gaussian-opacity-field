@@ -463,6 +463,7 @@ def infer(image_360_path = "zcabnzh__00000_.png"):
                 })
 
     save_data(traindata, './traindata')
+    torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     # Set up command line argument parser
@@ -479,5 +480,18 @@ if __name__ == "__main__":
     
     # All done
     print("\nPreparation of training dataset complete.")
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

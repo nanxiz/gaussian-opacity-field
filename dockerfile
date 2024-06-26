@@ -51,15 +51,10 @@ RUN pip install submodules/diff-gaussian-rasterization/diff_gaussian_rasterizati
 RUN pip install submodules/simple-knn/simple_knn-0.0.0-cp310-cp310-linux_x86_64.whl
 
 
+RUN pip install scikit-image kornia tqdm diffusers accelerate einops transformers 
 
+RUN pip install xformers==0.0.20
 
-
-RUN apt-get update && apt-get install -y \
-    libgmp-dev \
-    libmpfr-dev \
-    libboost-all-dev \
-    libcgal-dev \
-    && rm -rf /var/lib/apt/lists/*
 
 
 # Build and install Tetra-nerf for triangulation
