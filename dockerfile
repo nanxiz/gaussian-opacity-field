@@ -44,6 +44,10 @@ RUN pip install blinker --ignore-installed
 COPY requirements.txt /workspace/gaussian-opacity-field/
 RUN pip install -r requirements.txt
 
+RUN pip install blinker --ignore-installed
+
+RUN pip install -r requirements.txt
+
 
 # Install submodules
 RUN pip install submodules/diff-gaussian-rasterization/diff_gaussian_rasterization-0.0.0-cp310-cp310-linux_x86_64.whl
