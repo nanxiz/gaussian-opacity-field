@@ -26,6 +26,7 @@ import runpod
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+torch.cuda.empty_cache()
 
 def remove_directory(dir_path):
     if os.path.exists(dir_path):
@@ -175,6 +176,7 @@ bucket_name = 'splatminiworlds'
 
 
 def inference(event) -> Union[str, dict]:
+    torch.cuda.empty_cache()
     input_data = event.get("input", {})
     image_url = input_data.get("image_url", "")
     aws_access_key_id = input_data.get("aws_access_key_id", "")
@@ -230,7 +232,7 @@ def inference(event) -> Union[str, dict]:
 
     run_script_in_directory(target_directory, script_name, script_args)
     
-    s3_object_name = "test.splat"
+    splat_result = upload_to_s3(splat_path, bucket_name, aws_access_key_id, aws_secret_access_key, region_name, "test.splat")
 
     command = ["python", "extract_mesh.py", "-m", "train_res", "--iteration", "2900"]
     run_command(command)
@@ -245,7 +247,7 @@ def inference(event) -> Union[str, dict]:
     s_mesh = trimesh.load('simplifytest.ply', force='mesh')
     s_mesh.export(obj_path)
 
-    splat_result = upload_to_s3(splat_path, bucket_name, aws_access_key_id, aws_secret_access_key, region_name, "test.splat")
+    #splat_result = upload_to_s3(splat_path, bucket_name, aws_access_key_id, aws_secret_access_key, region_name, "test.splat")
     obj_result = upload_to_s3(obj_path, bucket_name, aws_access_key_id, aws_secret_access_key, region_name, "test.obj")
 
 
@@ -267,7 +269,7 @@ def main():
             "aws_access_key_id": "",
             "aws_secret_access_key": "",
             "region_name": "us-east-1",
-            "bucket_name": ""
+            "bucket_name": "splatminiworlds"
 
         }
     }
